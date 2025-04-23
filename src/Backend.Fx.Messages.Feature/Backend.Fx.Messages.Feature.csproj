@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Backend.Fx" Version="8.1.1"/>
+        <PackageReference Include="Backend.Fx.Execution.Abstractions" Version="1.1.4" />
+        <PackageReference Include="Backend.Fx.Execution" Version="1.1.4" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\Backend.Fx.Messages\Backend.Fx.Messages.csproj" />
+    </ItemGroup>
+
+</Project>
