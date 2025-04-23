@@ -24,7 +24,6 @@ public class MessageHandlingModule : IModule
             .Where(type => type.IsImplementationOfOpenGenericInterface(typeof(IMessageHandler<>)))
             .Select(type => new ServiceDescriptor(type, type, ServiceLifetime.Scoped));
 
-
         foreach (var serviceDescriptor in serviceDescriptors)
         {
             var commandType = serviceDescriptor.ImplementationType!.GetTypeInfo()

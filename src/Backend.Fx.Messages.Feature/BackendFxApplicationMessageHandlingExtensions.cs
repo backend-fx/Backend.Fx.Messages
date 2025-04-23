@@ -18,19 +18,8 @@ public static class BackendFxApplicationMessageHandlingExtensions
         IIdentity? identity = null,
         CancellationToken cancellation = default) where TMessage : class
     {
-        var handlerTypes = application.GetHandlerTypes<TMessage>();
-
-        if (handlerTypes.Length == 0)
-        {
-            throw new InvalidOperationException("No handler types found.");
-        }
-
-        if (handlerTypes.Length > 1)
-        {
-            throw new InvalidOperationException("No handler types found.");
-        }
-
-        await application.InvokeHandler(message, identity, cancellation, handlerTypes[0]);
+        var handlerType = application.GetSingleHandlerType<TMessage>();
+        await application.InvokeHandler(message, identity, cancellation, handlerType);
     }
 
     /// <summary>
@@ -44,30 +33,21 @@ public static class BackendFxApplicationMessageHandlingExtensions
         IIdentity? identity = null,
         CancellationToken cancellation = default) where TMessage : class
     {
-        var handlerTypes = application.GetHandlerTypes<TMessage>();
+        var handlerType = application.GetSingleHandlerType<TMessage>();
 
-        if (handlerTypes.Length == 0)
+        if (handlerType.GetInterfaces().Any(ift => ift == typeof(IMessageHandlerWithResult<TResult>)))
         {
-            throw new InvalidOperationException("No handler types found.");
-        }
-
-        if (handlerTypes.Length > 1)
-        {
-            throw new InvalidOperationException("No handler types found.");
-        }
-
-        if (handlerTypes[0].GetInterfaces().Any(ift => ift == typeof(IMessageHandlerWithResult<TResult>)))
-        {
-            var handler = await application.InvokeHandler(message, identity, cancellation, handlerTypes[0]);
+            var handler = await application.InvokeHandler(message, identity, cancellation, handlerType);
             // ReSharper disable once SuspiciousTypeConversion.Global
             return ((IMessageHandlerWithResult<TResult>)handler!).Result;
         }
 
-        throw new InvalidOperationException($"Handler {handlerTypes[0].Name} has no result of type {typeof(TResult).Name}");
+        throw new InvalidOperationException($"Handler {handlerType.Name} has no result of type {typeof(TResult).Name}");
     }
 
     /// <summary>
     /// Handles a message. Use this method, when you expect at least one handler to exist and to handle the message.
+    /// An optional delegate can be provided to handle exceptions that occur during the handling of the message.
     /// </summary>
     public static Task SendAsync<TMessage>(
         this IBackendFxApplication application,
@@ -80,6 +60,7 @@ public static class BackendFxApplicationMessageHandlingExtensions
     /// <summary>
     /// Fire and forget a message. Use this method, when you have neither an assumption on the existence of a handler
     /// nor any expectation of a result.
+    /// An optional delegate can be provided to handle exceptions that occur during the handling of the message.
     /// </summary>
     public static Task PublishAsync<TMessage>(
         this IBackendFxApplication application,
@@ -161,6 +142,23 @@ public static class BackendFxApplicationMessageHandlingExtensions
         return handler;
     }
 
+    private static Type GetSingleHandlerType<TMessage>(this IBackendFxApplication application) where TMessage : class
+    {
+        var handlerTypes = application.GetHandlerTypes<TMessage>();
+        
+        if (handlerTypes.Length == 0)
+        {
+            throw new InvalidOperationException($"No handlers for {typeof(TMessage).Name} found.");
+        }
+
+        if (handlerTypes.Length > 1)
+        {
+            throw new InvalidOperationException($"More than one handler for {typeof(TMessage).Name} found.");
+        }
+
+        return handlerTypes.Single();
+    }
+    
     private static Type[] GetHandlerTypes<TMessage>(this IBackendFxApplication application) where TMessage : class
     {
         var messageHandlingFeature = application.GetFeature<MessageHandlingFeature>();
@@ -169,8 +167,11 @@ public static class BackendFxApplicationMessageHandlingExtensions
             throw new InvalidOperationException("Message handling feature is not enabled.");
         }
 
-        var handlerTypes = messageHandlingFeature.MessageHandlerRegistry.GetCommandHandlerTypes(typeof(TMessage))
+        var handlerTypes = messageHandlingFeature
+            .MessageHandlerRegistry
+            .GetCommandHandlerTypes(typeof(TMessage))
             .ToArray();
+        
         return handlerTypes;
     }
 }
