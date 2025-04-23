@@ -1,0 +1,23 @@
+name: release
+
+on:
+  push:
+    tags: 
+      - "v*.*.*"
+
+jobs:
+  nuke-build:
+    name: nuke-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: nuke build
+        run: ./build.sh publish
+        env:
+            MYGET_APIKEY: ${{ secrets.MYGET_APIKEY }}
+            NUGET_APIKEY: ${{ secrets.NUGET_APIKEY }}

@@ -1,0 +1,21 @@
+version: 2
+updates:
+- package-ecosystem: "github-actions"
+  directory: ".github/workflows"
+  schedule:
+    interval: "daily"
+
+- package-ecosystem: nuget
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  allow:
+  - dependency-type: direct
+  groups:
+    dotnet-minor:
+      patterns:
+      - "*"
+      update-types:
+      - "minor"
+      - "patch"

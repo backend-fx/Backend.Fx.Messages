@@ -1,0 +1,32 @@
+name: continuous
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/**"
+  
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  nuke-build:
+    name: nuke-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: nuke build
+        run: ./build.sh test
