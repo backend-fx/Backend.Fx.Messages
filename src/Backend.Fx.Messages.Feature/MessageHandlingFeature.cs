@@ -7,7 +7,7 @@ public class MessageHandlingFeature : IFeature
 {
     public void Enable(IBackendFxApplication application)
     {
-        var messageHandlingModule = new MessageHandlingModule(application.Assemblies);
+        var messageHandlingModule = new MessageHandlingModule(new Mediator(application), application.Assemblies);
         application.CompositionRoot.RegisterModules(messageHandlingModule);
     }
 }

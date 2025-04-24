@@ -7,10 +7,12 @@ namespace Backend.Fx.Messages.Feature;
 
 public class MessageHandlingModule : IModule
 {
+    private readonly IMediator _mediator;
     private readonly Assembly[] _assemblies;
     
-    public MessageHandlingModule(Assembly[] assemblies)
+    public MessageHandlingModule(IMediator mediator, params Assembly[] assemblies)
     {
+        _mediator = mediator;
         _assemblies = assemblies;
     }
 
@@ -35,5 +37,6 @@ public class MessageHandlingModule : IModule
         }
         
         compositionRoot.Register(ServiceDescriptor.Singleton<IMessageHandlerRegistry>(messageHandlerRegistry));
+        compositionRoot.Register(ServiceDescriptor.Singleton(_mediator));
     }
 }

@@ -5,7 +5,7 @@ using Backend.Fx.Execution.Pipeline;
 using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Backend.Fx.Messages;
+namespace Backend.Fx.Messages.Feature;
 
 [PublicAPI]
 public static class BackendFxApplicationMessageHandlingExtensions
@@ -14,7 +14,7 @@ public static class BackendFxApplicationMessageHandlingExtensions
     /// Invokes a single handler. Use this method, when there must be exactly one handler for the message.
     /// A possible exception is propagated to the caller.
     /// </summary>
-    public static async Task InvokeAsync<TMessage>(
+    public static async ValueTask InvokeAsync<TMessage>(
         this IBackendFxApplication application,
         TMessage message,
         IIdentity? identity = null,
@@ -29,13 +29,13 @@ public static class BackendFxApplicationMessageHandlingExtensions
     /// be exactly one handler for the message, and this one is known for returning a result.
     /// A possible exception is propagated to the caller.
     /// </summary>
-    public static async Task<TResult> InvokeAsync<TMessage, TResult>(
+    public static async ValueTask<TResult> InvokeAsync<TResult>(
         this IBackendFxApplication application,
-        TMessage message,
+        object message,
         IIdentity? identity = null,
-        CancellationToken cancellation = default) where TMessage : class
+        CancellationToken cancellation = default)
     {
-        var handlerType = application.GetSingleHandlerType<TMessage>();
+        var handlerType = application.GetSingleHandlerType(message.GetType());
 
         if (handlerType.GetInterfaces().Any(ift => ift == typeof(IMessageHandlerWithResult<TResult>)))
         {
@@ -51,7 +51,7 @@ public static class BackendFxApplicationMessageHandlingExtensions
     /// Handles a message. Use this method, when you expect at least one handler to exist and to handle the message.
     /// An optional delegate can be provided to handle exceptions that occur during the handling of the message.
     /// </summary>
-    public static Task SendAsync<TMessage>(
+    public static ValueTask SendAsync<TMessage>(
         this IBackendFxApplication application,
         TMessage message,
         IIdentity? identity = null,
@@ -64,7 +64,7 @@ public static class BackendFxApplicationMessageHandlingExtensions
     /// nor any expectation of a result.
     /// An optional delegate can be provided to handle exceptions that occur during the handling of the message.
     /// </summary>
-    public static Task PublishAsync<TMessage>(
+    public static ValueTask PublishAsync<TMessage>(
         this IBackendFxApplication application,
         TMessage message,
         IIdentity? identity = null,
@@ -72,7 +72,7 @@ public static class BackendFxApplicationMessageHandlingExtensions
         CancellationToken cancellation = default) where TMessage : class
         => PublishAsync(application, false, message, identity, onException, cancellation);
 
-    private static async Task PublishAsync<TMessage>(
+    private static async ValueTask PublishAsync<TMessage>(
         this IBackendFxApplication application,
         bool expectAtLeastOneHandler,
         TMessage message,
@@ -100,7 +100,7 @@ public static class BackendFxApplicationMessageHandlingExtensions
         }
     }
 
-    private static async Task<IMessageHandler?> InvokeHandler<TMessage>(
+    private static async ValueTask<IMessageHandler?> InvokeHandler<TMessage>(
         this IBackendFxApplication application,
         TMessage message,
         IIdentity? identity,
@@ -145,26 +145,32 @@ public static class BackendFxApplicationMessageHandlingExtensions
     }
 
     private static Type GetSingleHandlerType<TMessage>(this IBackendFxApplication application) where TMessage : class
+        => application.GetSingleHandlerType(typeof(TMessage));
+
+    private static Type GetSingleHandlerType(this IBackendFxApplication application, Type messageType)
     {
-        var handlerTypes = application.GetHandlerTypes<TMessage>();
-        
+        var handlerTypes = application.GetHandlerTypes(messageType);
+
         if (handlerTypes.Length == 0)
         {
-            throw new InvalidOperationException($"No handlers for {typeof(TMessage).Name} found.");
+            throw new InvalidOperationException($"No handlers for {messageType.Name} found.");
         }
 
         if (handlerTypes.Length > 1)
         {
-            throw new InvalidOperationException($"More than one handler for {typeof(TMessage).Name} found.");
+            throw new InvalidOperationException($"More than one handler for {messageType.Name} found.");
         }
 
         return handlerTypes.Single();
     }
-    
+
     private static Type[] GetHandlerTypes<TMessage>(this IBackendFxApplication application) where TMessage : class
+        => application.GetHandlerTypes(typeof(TMessage));
+
+    private static Type[] GetHandlerTypes(this IBackendFxApplication application, Type messageType)
     {
         var registry = application.CompositionRoot.ServiceProvider.GetRequiredService<IMessageHandlerRegistry>();
-        var handlerTypes = registry.GetMessageHandlerTypes(typeof(TMessage)).ToArray();
+        var handlerTypes = registry.GetMessageHandlerTypes(messageType).ToArray();
         return handlerTypes;
     }
 }
