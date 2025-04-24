@@ -8,17 +8,16 @@ namespace Backend.Fx.Messages.Feature;
 public class MessageHandlingModule : IModule
 {
     private readonly Assembly[] _assemblies;
-    private readonly MessageHandlerRegistry _messageHandlerRegistry;
-
-
-    public MessageHandlingModule(MessageHandlerRegistry messageHandlerRegistry, Assembly[] assemblies)
+    
+    public MessageHandlingModule(Assembly[] assemblies)
     {
-        _messageHandlerRegistry = messageHandlerRegistry;
         _assemblies = assemblies;
     }
 
     public void Register(ICompositionRoot compositionRoot)
     {
+        var messageHandlerRegistry = new MessageHandlerRegistry();
+        
         var serviceDescriptors = _assemblies
             .SelectMany(assembly => assembly.GetTypes())
             .Where(type => type.IsImplementationOfOpenGenericInterface(typeof(IMessageHandler<>)))
@@ -26,13 +25,15 @@ public class MessageHandlingModule : IModule
 
         foreach (var serviceDescriptor in serviceDescriptors)
         {
-            var commandType = serviceDescriptor.ImplementationType!.GetTypeInfo()
+            var messageType = serviceDescriptor.ImplementationType!.GetTypeInfo()
                 .ImplementedInterfaces
                 .Single(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMessageHandler<>))
                 .GenericTypeArguments.First();
 
-            _messageHandlerRegistry.Add(commandType, serviceDescriptor.ServiceType);
+            messageHandlerRegistry.Add(messageType, serviceDescriptor.ServiceType);
             compositionRoot.Register(serviceDescriptor);
         }
+        
+        compositionRoot.Register(ServiceDescriptor.Singleton<IMessageHandlerRegistry>(messageHandlerRegistry));
     }
 }

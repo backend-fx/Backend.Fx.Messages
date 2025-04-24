@@ -10,20 +10,20 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Backend.Fx.Messages.Feature.Tests;
 
-public class TheBackendFxApplicationCommandHandlerExecutor
+public class TheBackendFxApplicationMessageHandlerExtensions
 {
     private readonly MyMessage _message = new("Name1", 1, DateTime.UtcNow);
     private readonly IExceptionLogger _exceptionLogger = A.Fake<IExceptionLogger>();
     private readonly IMessageHandlerSpy _commandHandlerSpy = A.Fake<IMessageHandlerSpy>();
 
-    private readonly int _handlerCount = typeof(TheBackendFxApplicationCommandHandlerExecutor)
+    private readonly int _handlerCount = typeof(TheBackendFxApplicationMessageHandlerExtensions)
         .Assembly
         .GetTypes()
         .Count(t => t.IsImplementationOfOpenGenericInterface(typeof(IMessageHandler<>)));
 
     private readonly BackendFxApplication _app;
 
-    public TheBackendFxApplicationCommandHandlerExecutor()
+    public TheBackendFxApplicationMessageHandlerExtensions()
     {
         _app = new BackendFxApplication(new SimpleInjectorCompositionRoot(), _exceptionLogger, GetType().Assembly);
         _app.EnableFeature(new MessageHandlingFeature());

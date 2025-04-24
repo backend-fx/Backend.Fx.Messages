@@ -7,5 +7,5 @@ public interface IMessageHandler;
 [PublicAPI]
 public interface IMessageHandler<in TMessage> : IMessageHandler where TMessage : class
 {
-    Task HandleAsync(TMessage command, CancellationToken cancellation = default);
+    Task HandleAsync(TMessage message, CancellationToken cancellation = default);
 }

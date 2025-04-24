@@ -2,22 +2,17 @@ using System.Collections.Concurrent;
 
 namespace Backend.Fx.Messages.Feature;
 
-public interface IMessageHandlerRegistry
-{
-    IEnumerable<Type> GetCommandHandlerTypes(Type commandType);
-}
-
 public class MessageHandlerRegistry : IMessageHandlerRegistry
 {
-    private readonly ConcurrentDictionary<Type, List<Type>> _commandHandlers = new();
-    
-    public IEnumerable<Type> GetCommandHandlerTypes(Type commandType)
+    private readonly ConcurrentDictionary<Type, List<Type>> _messageHandlers = new();
+
+    public IEnumerable<Type> GetMessageHandlerTypes(Type messageType)
     {
-        return _commandHandlers.GetOrAdd(commandType, _ => []);
+        return _messageHandlers.GetOrAdd(messageType, _ => []);
     }
 
-    public void Add(Type commandType, Type implementingType)
+    public void Add(Type messageType, Type implementingType)
     {
-        _commandHandlers.GetOrAdd(commandType, _ => []).Add(implementingType);
+        _messageHandlers.GetOrAdd(messageType, _ => []).Add(implementingType);
     }
 }

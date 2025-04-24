@@ -2,10 +2,12 @@ using System.Security.Principal;
 using Backend.Fx.Exceptions;
 using Backend.Fx.Execution;
 using Backend.Fx.Execution.Pipeline;
+using JetBrains.Annotations;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Backend.Fx.Messages.Feature;
+namespace Backend.Fx.Messages;
 
+[PublicAPI]
 public static class BackendFxApplicationMessageHandlingExtensions
 {
     /// <summary>
@@ -127,7 +129,7 @@ public static class BackendFxApplicationMessageHandlingExtensions
             {
                 var isAuthorized = await authorizedCommand.IsAuthorizedAsync(
                     identity ?? new AnonymousIdentity(),
-                    cancellation).ConfigureAwait(false);
+                    ct).ConfigureAwait(false);
 
                 if (isAuthorized == false)
                 {
@@ -161,17 +163,8 @@ public static class BackendFxApplicationMessageHandlingExtensions
     
     private static Type[] GetHandlerTypes<TMessage>(this IBackendFxApplication application) where TMessage : class
     {
-        var messageHandlingFeature = application.GetFeature<MessageHandlingFeature>();
-        if (messageHandlingFeature == null)
-        {
-            throw new InvalidOperationException("Message handling feature is not enabled.");
-        }
-
-        var handlerTypes = messageHandlingFeature
-            .MessageHandlerRegistry
-            .GetCommandHandlerTypes(typeof(TMessage))
-            .ToArray();
-        
+        var registry = application.CompositionRoot.ServiceProvider.GetRequiredService<IMessageHandlerRegistry>();
+        var handlerTypes = registry.GetMessageHandlerTypes(typeof(TMessage)).ToArray();
         return handlerTypes;
     }
 }
